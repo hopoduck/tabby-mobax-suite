@@ -10,6 +10,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import {
+  ConfigService,
   NotificationsService,
   PlatformService,
   MenuItemOptions,
@@ -374,6 +375,7 @@ export class SftpFileListComponent implements OnChanges {
     private host: ElementRef<HTMLElement>,
     private transfer: TransferService,
     private dragOut: DragOutServer,
+    private config: ConfigService,
   ) {
     // Bind the drag-out HTTP server eagerly: dragstart is synchronous (the browser captures
     // dataTransfer when the handler returns), so register()/urlFor()/setData must run without an
@@ -958,11 +960,14 @@ export class SftpFileListComponent implements OnChanges {
     }
   }
 
-  private activate(item: SFTPFile): void {
+  private activate(item: SFTPFile, forceOs = false): void {
     if (item.isDirectory) {
       this.navigate.emit({ path: item.fullPath, silent: false }); // explicit double-click open
     } else if (this.sftp) {
-      void editLocally(item, this.sftp, this.platform, this.notifications, this.transfer);
+      void editLocally(item, this.sftp, this.platform, this.notifications, this.transfer, {
+        editorPath: this.config.store.mobaxSftp?.editorPath ?? '',
+        forceOs,
+      });
     }
   }
 
@@ -1183,6 +1188,9 @@ export class SftpFileListComponent implements OnChanges {
     // Single entry: open first (primary), delete last (destructive). Folders are downloadable too
     // (recursive) — doDownload dispatches to the folder path for them.
     items.push({ label: '열기', click: () => this.activate(item) });
+    if (!item.isDirectory) {
+      items.push({ label: '연결 프로그램으로 열기', click: () => this.activate(item, true) });
+    }
     items.push({ label: '다운로드', click: () => void this.doDownload(item) });
     items.push({ type: 'separator' });
     items.push({ label: '잘라내기', click: () => this.cut() });

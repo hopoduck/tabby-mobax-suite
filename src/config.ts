@@ -15,6 +15,11 @@ export class SidebarConfigProvider extends ConfigProvider {
       enabled: true,
       intervalSeconds: 3,
     },
+    // SFTP list behaviour. `editorPath` = program used to open text files from the list
+    // ('' = notepad on Windows); known-binary extensions always use the OS association.
+    mobaxSftp: {
+      editorPath: '',
+    },
     mobaxMacros: {
       list: [],
     },

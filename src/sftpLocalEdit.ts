@@ -9,6 +9,8 @@ import { createSerialRunner } from './logic/serialRunner';
 import { CancelledError } from './transferWrap';
 import { FsFileDownload, FsFileUpload } from './fsTransfer';
 import { TransferService } from './services/transfer.service';
+import { spawn } from 'child_process';
+import { isBinaryName } from './logic/openWith';
 
 const WATCH_START_DELAY_MS = 1000; // skip the editor's initial write burst on open
 const SAVE_DEBOUNCE_MS = 1000;
@@ -41,10 +43,50 @@ async function liveMode(sftp: SFTPSession, fullPath: string): Promise<number | n
   return found ? found.mode & 0o7777 : null;
 }
 
+export interface EditLocallyOptions {
+  /** Editor executable path from settings; ''/undefined = notepad fallback (Windows only). */
+  editorPath?: string;
+  /** Force the OS file-association open (context-menu "연결 프로그램으로 열기"). */
+  forceOs?: boolean;
+}
+
 /**
- * Download a remote file to a temp dir, open it with the OS default app, and re-upload it
- * whenever the local copy is saved (MobaXterm "Edit locally"). Watches the temp *directory*
- * (filtered by filename) so atomic-save editors (write-temp-then-rename) keep being tracked.
+ * Open the downloaded temp copy. MobaXterm model: known-binary extensions (and explicit
+ * forceOs) go to the OS file association; everything else opens in the configured text editor
+ * so the Windows "choose an app" dialog never appears. On a non-Windows host with no editor
+ * configured there is no notepad to fall back to, so the OS association keeps handling it.
+ */
+function openLocalFile(
+  localPath: string,
+  name: string,
+  platform: PlatformService,
+  notifications: NotificationsService,
+  opts?: EditLocallyOptions,
+): void {
+  const editorPath = (opts?.editorPath ?? '').trim();
+  if (opts?.forceOs || isBinaryName(name) || (!editorPath && process.platform !== 'win32')) {
+    platform.openPath(localPath);
+    return;
+  }
+  const editor = editorPath || 'notepad.exe';
+  try {
+    const child = spawn(editor, [localPath], { detached: true, stdio: 'ignore' });
+    child.on('error', () => {
+      notifications.error(`에디터 실행 실패: ${editor}`, 'OS 기본 프로그램으로 엽니다.');
+      platform.openPath(localPath);
+    });
+    child.unref();
+  } catch (err) {
+    notifications.error(`에디터 실행 실패: ${editor}`, String((err as Error)?.message ?? err));
+    platform.openPath(localPath);
+  }
+}
+
+/**
+ * Download a remote file to a temp dir, open it (configured text editor for text names, OS
+ * association for binaries / forceOs — see openLocalFile), and re-upload it whenever the local
+ * copy is saved (MobaXterm "Edit locally"). Watches the temp *directory* (filtered by filename)
+ * so atomic-save editors (write-temp-then-rename) keep being tracked.
  */
 export async function editLocally(
   item: SFTPFile,
@@ -52,6 +94,7 @@ export async function editLocally(
   platform: PlatformService,
   notifications: NotificationsService,
   transfer: TransferService,
+  opts?: EditLocallyOptions,
 ): Promise<void> {
   const dir = mkdtempSync(joinPath(tmpdir(), 'tabby-mobax-edit-'));
   const localPath = joinPath(dir, item.name);
@@ -92,7 +135,7 @@ export async function editLocally(
   }
 
   chmodSync(localPath, 0o700);
-  platform.openPath(localPath);
+  openLocalFile(localPath, item.name, platform, notifications, opts);
 
   // 2. Watch + re-upload.
   let stopped = false;

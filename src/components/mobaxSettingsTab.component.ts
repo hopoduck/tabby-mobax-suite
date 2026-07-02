@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { ConfigService } from 'tabby-core';
+import { getRemoteDialog } from '../electronDialog';
 
 type TabKey = 'sessions' | 'sftp' | 'macros' | 'tmux' | 'reload';
 
@@ -56,6 +57,23 @@ type TabKey = 'sessions' | 'sftp' | 'macros' | 'tmux' | 'reload';
         />
       </div>
 
+      <h3 class="section">SFTP</h3>
+      <div class="form-row">
+        <span>기본 에디터</span>
+        <input
+          type="text"
+          class="form-control editor-path"
+          placeholder="비워두면 메모장(notepad)"
+          [ngModel]="editorPath"
+          (ngModelChange)="setEditorPath($event)"
+        />
+        <button class="btn btn-secondary" (click)="browseEditor()">찾아보기</button>
+      </div>
+      <p class="hint">
+        SFTP 목록에서 파일을 열 때 사용할 프로그램입니다(.exe 실행 파일만 지원). 이미지·압축
+        파일 등 바이너리 확장자는 OS 기본 프로그램으로 열립니다.
+      </p>
+
       <h3 class="section">자동 잠금 해제</h3>
       <auto-unlock-settings-tab></auto-unlock-settings-tab>
     </div>
@@ -103,6 +121,9 @@ type TabKey = 'sessions' | 'sftp' | 'macros' | 'tmux' | 'reload';
       }
       .interval {
         width: 80px;
+      }
+      .editor-path {
+        flex: 1;
       }
       .text-warning {
         color: var(--mobax-warning);
@@ -164,5 +185,32 @@ export class MobaxSettingsTabComponent {
     const n = Math.max(1, Math.round(Number(val) || 3));
     Object.assign(this.config.store.mobaxStatusBar, { intervalSeconds: n });
     this.config.save();
+  }
+
+  get editorPath(): string {
+    return this.config.store.mobaxSftp?.editorPath ?? '';
+  }
+
+  setEditorPath(val: string): void {
+    Object.assign(this.config.store.mobaxSftp, { editorPath: val });
+    this.config.save();
+  }
+
+  async browseEditor(): Promise<void> {
+    const dialog = getRemoteDialog();
+    if (!dialog) {
+      return;
+    }
+    const res = await dialog.showOpenDialog({
+      title: '기본 에디터 선택',
+      filters: [
+        { name: '실행 파일', extensions: ['exe'] },
+        { name: '모든 파일', extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    });
+    if (!res.canceled && res.filePaths?.length) {
+      this.setEditorPath(res.filePaths[0]);
+    }
   }
 }

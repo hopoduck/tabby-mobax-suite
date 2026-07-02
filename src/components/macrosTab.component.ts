@@ -22,6 +22,7 @@ import { buildVarMap } from '../logic/variables';
 import { activeProfileId } from '../logic/activeSession';
 import { MacroRunnerService } from '../services/macroRunner.service';
 import { MacroViewService } from '../services/macroView.service';
+import { getRemoteDialog } from '../electronDialog';
 import { writeFileSync, readFileSync } from 'fs';
 import {
   buildExport,
@@ -49,21 +50,6 @@ const KEY_OPTIONS: { value: MacroKey; label: string }[] = [
 
 function genId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-// Minimal structural type for the Electron `dialog` main module reached via @electron/remote,
-// so we avoid an electron type dependency (electron is an external).
-interface RemoteDialog {
-  showSaveDialog(opts: {
-    title?: string;
-    defaultPath?: string;
-    filters?: { name: string; extensions: string[] }[];
-  }): Promise<{ canceled: boolean; filePath?: string }>;
-  showOpenDialog(opts: {
-    title?: string;
-    filters?: { name: string; extensions: string[] }[];
-    properties?: string[];
-  }): Promise<{ canceled: boolean; filePaths: string[] }>;
 }
 
 @Component({
@@ -682,22 +668,6 @@ export class MacrosTabComponent implements OnInit, OnDestroy {
     this.platform.popupContextMenu(menu, event);
   }
 
-  private getDialog(): RemoteDialog | null {
-    try {
-      const nodeRequire = (window as unknown as { nodeRequire?: (id: string) => unknown })
-        .nodeRequire;
-      if (!nodeRequire) {
-        return null;
-      }
-      const remote = nodeRequire('@electron/remote') as
-        | { getBuiltin?: (name: string) => unknown }
-        | undefined;
-      return (remote?.getBuiltin?.('dialog') as RemoteDialog | undefined) ?? null;
-    } catch {
-      return null;
-    }
-  }
-
   private dateStamp(): string {
     const d = new Date();
     const p = (n: number): string => String(n).padStart(2, '0');
@@ -705,7 +675,7 @@ export class MacrosTabComponent implements OnInit, OnDestroy {
   }
 
   async exportMacros(): Promise<void> {
-    const dialog = this.getDialog();
+    const dialog = getRemoteDialog();
     if (!dialog) {
       this.notifications.error('내보내기 불가', 'Electron 대화상자를 사용할 수 없습니다.');
       return;
@@ -734,7 +704,7 @@ export class MacrosTabComponent implements OnInit, OnDestroy {
   }
 
   async importMacros(): Promise<void> {
-    const dialog = this.getDialog();
+    const dialog = getRemoteDialog();
     if (!dialog) {
       this.notifications.error('불러오기 불가', 'Electron 대화상자를 사용할 수 없습니다.');
       return;
