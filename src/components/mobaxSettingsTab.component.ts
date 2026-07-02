@@ -1,6 +1,8 @@
+import { existsSync } from 'fs';
 import { Component } from '@angular/core';
 import { ConfigService } from 'tabby-core';
 import { getRemoteDialog } from '../electronDialog';
+import { matchPreset, resolvePresets, PresetId } from '../logic/editorPresets';
 
 type TabKey = 'sessions' | 'sftp' | 'macros' | 'tmux' | 'reload';
 
@@ -60,6 +62,22 @@ type TabKey = 'sessions' | 'sftp' | 'macros' | 'tmux' | 'reload';
       <h3 class="section">SFTP</h3>
       <div class="form-row">
         <span>기본 에디터</span>
+        <select
+          class="form-control preset-select"
+          [ngModel]="selectedPreset"
+          (ngModelChange)="applyPreset($event)"
+        >
+          <option value="notepad">메모장 (기본)</option>
+          <option value="notepadpp" [disabled]="presetMissing('notepadpp')">
+            Notepad++{{ presetMissing('notepadpp') ? ' (설치 안됨)' : '' }}
+          </option>
+          <option value="vscode" [disabled]="presetMissing('vscode')">
+            VS Code{{ presetMissing('vscode') ? ' (설치 안됨)' : '' }}
+          </option>
+          <option value="custom" disabled>직접 지정</option>
+        </select>
+      </div>
+      <div class="form-row">
         <input
           type="text"
           class="form-control editor-path"
@@ -125,6 +143,9 @@ type TabKey = 'sessions' | 'sftp' | 'macros' | 'tmux' | 'reload';
       .editor-path {
         flex: 1;
       }
+      .preset-select {
+        flex: 1;
+      }
       .text-warning {
         color: var(--mobax-warning);
       }
@@ -185,6 +206,32 @@ export class MobaxSettingsTabComponent {
     const n = Math.max(1, Math.round(Number(val) || 3));
     Object.assign(this.config.store.mobaxStatusBar, { intervalSeconds: n });
     this.config.save();
+  }
+
+  // Resolved once at construction: settings-tab lifetime is short and an install mid-session is
+  // an edge case not worth polling the filesystem for on every change-detection pass.
+  private resolvedPresets = resolvePresets(
+    process.env as Record<string, string | undefined>,
+    existsSync,
+  );
+
+  get selectedPreset(): PresetId | 'custom' {
+    return matchPreset(this.editorPath, this.resolvedPresets);
+  }
+
+  presetMissing(id: PresetId): boolean {
+    return this.resolvedPresets[id] === null;
+  }
+
+  applyPreset(id: string): void {
+    if (id === 'custom') {
+      return; // display-only state, not an action
+    }
+    const path = this.resolvedPresets[id as PresetId];
+    if (path === null || path === undefined) {
+      return; // not installed (option is disabled anyway)
+    }
+    this.setEditorPath(path);
   }
 
   get editorPath(): string {
