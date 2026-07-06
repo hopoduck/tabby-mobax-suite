@@ -67,6 +67,7 @@ interface ProfileNode {
 interface FolderNode {
   key: string;
   name: string;
+  icon?: string; // custom group icon (same semantics as a profile icon: FA class or raw HTML)
   profiles: ProfileNode[];
 }
 
@@ -168,7 +169,25 @@ interface FolderNode {
               />
             </svg>
           </span>
-          <svg class="mobax-folder-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <i
+            *ngIf="folder.icon && !isSvgIcon(folder.icon)"
+            class="mobax-folder-icon mobax-folder-icon-fa fa-fw"
+            [ngClass]="folder.icon"
+            aria-hidden="true"
+          ></i>
+          <span
+            *ngIf="folder.icon && isSvgIcon(folder.icon)"
+            class="mobax-folder-icon mobax-folder-icon-svg"
+            [innerHTML]="iconHtml(folder.icon)"
+            aria-hidden="true"
+          ></span>
+          <svg
+            *ngIf="!folder.icon"
+            class="mobax-folder-icon"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            aria-hidden="true"
+          >
             <path
               *ngIf="!isExpanded(folder.key)"
               d="M9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.825a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31L.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3z"
@@ -261,6 +280,14 @@ interface FolderNode {
           </div>
         </div>
       </div>
+
+      <folder-icon-picker
+        *ngIf="iconPickerFolder"
+        [folderName]="iconPickerFolder.name"
+        [currentIcon]="iconPickerFolder.icon"
+        (chosen)="onIconChosen($event)"
+        (closed)="closeIconPicker()"
+      ></folder-icon-picker>
     </div>
   `,
   styles: [
@@ -323,6 +350,25 @@ interface FolderNode {
         height: 15px;
         flex: 0 0 auto;
         opacity: 0.8;
+      }
+      .mobax-folder-icon-fa {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        line-height: 1;
+      }
+      .mobax-folder-icon-svg {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .mobax-folder-icon-svg ::ng-deep svg,
+      .mobax-folder-icon-svg ::ng-deep img {
+        height: 15px;
+        width: auto;
+        max-width: 16px;
+        display: block;
       }
       .mobax-folder-name {
         flex: 1 1 auto;
@@ -568,6 +614,7 @@ export class SessionsTabComponent implements OnInit, OnDestroy {
   selectedFolderKey: string | null = null;
   renamingId: string | null = null;
   renamingFolderKey: string | null = null;
+  iconPickerFolder: FolderNode | null = null;
 
   // Cache trusted SafeHtml per raw-SVG icon string (only built for custom SVG icons).
   private iconHtmlCache = new Map<string, SafeHtml>();
@@ -1024,6 +1071,45 @@ export class SessionsTabComponent implements OnInit, OnDestroy {
     await this.reload();
   }
 
+  openIconPicker(folder: FolderNode): void {
+    if (folder.key === UNGROUPED_KEY) {
+      return;
+    }
+    this.iconPickerFolder = folder;
+    // ApplicationRef-attached view — repaint explicitly (same reason as select()).
+    this.safeDetect();
+  }
+
+  closeIconPicker(): void {
+    this.iconPickerFolder = null;
+    this.safeDetect();
+  }
+
+  // Write path deliberately avoids writeProfileGroup: Object.assign can't delete a field, which
+  // "restore default" (icon = null) needs. Direct mutation of config.store.groups items is the
+  // same pattern Tabby core uses (newProfileGroup pushes into it).
+  async onIconChosen(icon: string | null): Promise<void> {
+    const folder = this.iconPickerFolder;
+    this.iconPickerFolder = null;
+    if (!folder) {
+      return;
+    }
+    const groups = (this.config.store.groups ?? []) as Array<{ id: string; icon?: string }>;
+    const group = groups.find((g) => g?.id === folder.key);
+    if (group) {
+      if (icon === null) {
+        delete group.icon;
+      } else {
+        group.icon = icon;
+      }
+      await this.config.save();
+    }
+    // Group gone (deleted elsewhere while the picker was open): fall through silently — no write,
+    // just re-sync the view.
+    await this.reload();
+    this.safeDetect();
+  }
+
   buildFolderMenu(folder: FolderNode): MenuItemOptions[] {
     const real = folder.key !== UNGROUPED_KEY;
     return [
@@ -1031,6 +1117,11 @@ export class SessionsTabComponent implements OnInit, OnDestroy {
         label: '이름 변경',
         enabled: real,
         click: () => this.zone.run(() => this.startFolderRename(folder)),
+      },
+      {
+        label: '아이콘 변경...',
+        enabled: real,
+        click: () => this.zone.run(() => this.openIconPicker(folder)),
       },
       {
         label: '삭제',
@@ -1185,13 +1276,21 @@ export class SessionsTabComponent implements OnInit, OnDestroy {
   }
 
   private buildFolders(profiles: PartialProfile<Profile>[]): FolderNode[] {
-    const groups = (this.config.store.groups ?? []) as Array<{ id: string; name?: string }>;
+    const groups = (this.config.store.groups ?? []) as Array<{
+      id: string;
+      name?: string;
+      icon?: string;
+    }>;
     const groupNames = new Map<string, string>();
+    const groupIcons = new Map<string, string>();
     const buckets = new Map<string, ProfileNode[]>();
     // Seed every real group so empty groups still render (lets you drop sessions into a new folder).
     for (const g of groups) {
       if (g?.id) {
         groupNames.set(g.id, g.name ?? g.id);
+        if (g.icon) {
+          groupIcons.set(g.id, g.icon);
+        }
         buckets.set(g.id, []);
       }
     }
@@ -1217,6 +1316,7 @@ export class SessionsTabComponent implements OnInit, OnDestroy {
     const folders: FolderNode[] = [...buckets.entries()].map(([key, list]) => ({
       key,
       name: groupNames.get(key) ?? key,
+      icon: groupIcons.get(key),
       profiles: list.sort((a, b) => a.name.localeCompare(b.name)),
     }));
     folders.sort((a, b) => a.name.localeCompare(b.name));

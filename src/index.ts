@@ -30,6 +30,7 @@ import { MobaxSettingsTabProvider } from './mobaxSettingsTabProvider';
 import { MobaxSettingsTabComponent } from './components/mobaxSettingsTab.component';
 import { AutoUnlockSettingsTabComponent } from './components/autoUnlockSettingsTab.component';
 import { VariablesTabComponent } from './components/variablesTab.component';
+import { FolderIconPickerComponent } from './components/folderIconPicker.component';
 
 // Install the vault auto-unlock wrap at plugin require time — before Angular
 // bootstraps and constructs VaultService (see services/vaultAutoUnlock.ts).
@@ -96,6 +97,7 @@ export class SidebarBootstrap {
     AutoUnlockSettingsTabComponent,
     MobaxSettingsTabComponent,
     VariablesTabComponent,
+    FolderIconPickerComponent,
   ],
 })
 export default class MobaxSidebarModule {
