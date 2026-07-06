@@ -346,8 +346,8 @@ interface FolderNode {
         transform: rotate(90deg);
       }
       .mobax-folder-icon {
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
         flex: 0 0 auto;
         opacity: 0.8;
       }
@@ -355,14 +355,14 @@ interface FolderNode {
          one step larger than FA glyphs / images — inset it to ~16px drawn size inside the same
          20px box (padding keeps all three variants' boxes equal, so folder names stay aligned). */
       .mobax-folder-icon-default {
-        padding: 2px;
+        padding: 3px;
         box-sizing: border-box;
       }
       .mobax-folder-icon-fa {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 18px;
+        font-size: 20px;
         line-height: 1;
       }
       .mobax-folder-icon-svg {
@@ -372,9 +372,9 @@ interface FolderNode {
       }
       .mobax-folder-icon-svg ::ng-deep svg,
       .mobax-folder-icon-svg ::ng-deep img {
-        height: 18px;
+        height: 20px;
         width: auto;
-        max-width: 20px;
+        max-width: 22px;
         display: block;
       }
       .mobax-folder-name {
