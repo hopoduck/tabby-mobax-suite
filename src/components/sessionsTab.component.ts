@@ -183,7 +183,7 @@ interface FolderNode {
           ></span>
           <svg
             *ngIf="!folder.icon"
-            class="mobax-folder-icon"
+            class="mobax-folder-icon mobax-folder-icon-default"
             viewBox="0 0 16 16"
             fill="currentColor"
             aria-hidden="true"
@@ -346,16 +346,23 @@ interface FolderNode {
         transform: rotate(90deg);
       }
       .mobax-folder-icon {
-        width: 15px;
-        height: 15px;
+        width: 20px;
+        height: 20px;
         flex: 0 0 auto;
         opacity: 0.8;
+      }
+      /* The default folder SVG fills its viewBox edge-to-edge, so at the full box size it reads
+         one step larger than FA glyphs / images — inset it to ~16px drawn size inside the same
+         20px box (padding keeps all three variants' boxes equal, so folder names stay aligned). */
+      .mobax-folder-icon-default {
+        padding: 2px;
+        box-sizing: border-box;
       }
       .mobax-folder-icon-fa {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 13px;
+        font-size: 18px;
         line-height: 1;
       }
       .mobax-folder-icon-svg {
@@ -365,9 +372,9 @@ interface FolderNode {
       }
       .mobax-folder-icon-svg ::ng-deep svg,
       .mobax-folder-icon-svg ::ng-deep img {
-        height: 15px;
+        height: 18px;
         width: auto;
-        max-width: 16px;
+        max-width: 20px;
         display: block;
       }
       .mobax-folder-name {
