@@ -6,8 +6,8 @@ English | [한국어](./README.ko.md)
 
 The sidebar is an always-mounted icon rail with three tabs and a tmux action:
 
-- **Sessions** — saved SSH profiles (grouped); click to connect. Shows per-profile live-connection dots.
-- **SFTP** — a self-built file browser bound to the active SSH tab that **live-follows** the shell's working dir (pin to freeze). Multi-select, drag-to-move, OS drag-out/drop upload, cut/paste move, inline rename, keyboard nav.
+- **Sessions** — saved SSH profiles (grouped); click to connect. Shows per-profile live-connection dots, and each folder (group) can carry a custom icon (Font Awesome preset or an image file).
+- **SFTP** — a self-built file browser bound to the active SSH tab that **live-follows** the shell's working dir (pin to freeze). Multi-select, drag-to-move, OS drag-out/drop upload, cut/paste move, inline rename, keyboard nav, and **local editing** — double-click a file to open it in your default text editor; saving re-uploads it to the server automatically (the MobaXterm way).
 - **Macros** — saved keystroke/command macros, also a global **palette** (`Ctrl-Space`). Global or per-profile, with reusable **variables** (`${name}`) and JSON import/export.
 - **tmux** (rail action) — enters tmux control-mode on the active SSH tab; shown only when `tabby-tmux` is installed.
 
@@ -51,10 +51,10 @@ New-Item -ItemType Junction -Path "$env:APPDATA\tabby\plugins\node_modules\tabby
 ## Usage
 
 - Click a rail icon to switch tabs; click the **active** icon to collapse the pane, again to expand. Width/collapsed state persist.
-- **Sessions:** click a profile to connect; groups collapse/expand.
-- **SFTP:** browses the active session and follows `cd` (toggle **터미널 폴더 따라가기** to freeze). Multi-select (Ctrl/Shift+click or marquee), move via drag-drop or `Ctrl+X`/`Ctrl+V`, rename `F2`, delete `Delete`. Drag a file out to export; drop OS files in to upload.
+- **Sessions:** click a profile to connect; groups collapse/expand. Right-click a folder → **아이콘 변경...** to assign a Font Awesome preset or an image file (png/jpg/gif/webp/svg) as its icon — images are embedded into the config (they survive deleting the source file), and the default icon can be restored.
+- **SFTP:** browses the active session and follows `cd` (toggle **터미널 폴더 따라가기** to freeze). Multi-select (Ctrl/Shift+click or marquee), move via drag-drop or `Ctrl+X`/`Ctrl+V`, rename `F2`, delete `Delete`. Drag a file out to export; drop OS files in to upload. Double-click a file to open it in the configured text editor (default: Notepad); every save re-uploads it automatically with file permissions preserved. Known-binary extensions (images, archives, …) open via the OS file association instead, which the context menu's "연결 프로그램으로 열기" can also force.
 - **Macros:** create/edit/reorder, or press `Ctrl-Space` for the palette. Target a profile or all sessions; define variables in 변수 mode and use `${name}` in command steps; import/export as JSON.
-- **Settings:** Settings → MobaX Suite — toggle rail items, the status bar + poll interval, and vault auto-unlock.
+- **Settings:** Settings → MobaX Suite — toggle rail items (plus an optional Tabby-reload rail button, off by default), the status bar + poll interval, the SFTP default editor (Notepad / Notepad++ / VS Code preset or a custom path), and vault auto-unlock.
 
 ## License
 
