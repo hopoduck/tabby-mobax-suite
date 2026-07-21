@@ -8,7 +8,7 @@ The sidebar is an always-mounted icon rail with three tabs and a tmux action:
 
 - **Sessions** — saved SSH profiles (grouped); click to connect. Shows per-profile live-connection dots, and each folder (group) can carry a custom icon (Font Awesome preset or an image file).
 - **SFTP** — a self-built file browser bound to the active SSH tab that **live-follows** the shell's working dir (pin to freeze). Multi-select, drag-to-move, OS drag-out/drop upload, cut/paste move, inline rename, keyboard nav, and **local editing** — double-click a file to open it in your default text editor; saving re-uploads it to the server automatically (the MobaXterm way).
-- **Macros** — saved keystroke/command macros, also a global **palette** (`Ctrl-Space`). Global or per-profile, with reusable **variables** (`${name}`) and JSON import/export.
+- **Macros** — saved keystroke/command macros, also a global **palette** (`Ctrl-Space`). Global, per-profile, or per quick-connect device (the trailing `#title`), with reusable **variables** (`${name}`) and JSON import/export.
 - **tmux** (rail action) — enters tmux control-mode on the active SSH tab; shown only when `tabby-tmux` is installed.
 
 Outside the rail: a **bottom status bar** (live CPU / memory / disk / uptime / sessions + OS logo for the active host) and a unified **settings tab** under Tabby's Settings.

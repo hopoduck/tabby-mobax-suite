@@ -1,6 +1,6 @@
 {
   "name": "tabby-mobax-suite",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MobaXterm-style left sidebar for Tabby: saved SSH sessions, a live cwd-following SFTP file browser, keystroke macros, and a bottom server-stats bar.",
   "keywords": [
     "tabby-plugin",

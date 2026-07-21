@@ -19,7 +19,8 @@ import {
   applyVisibleReorder,
 } from '../logic/macro';
 import { buildVarMap } from '../logic/variables';
-import { activeProfileId } from '../logic/activeSession';
+import { activeScopeKey } from '../logic/activeSession';
+import { isQuickScope, quickScopeChoices, quickScopeLabel } from '../logic/scopeKey';
 import { MacroRunnerService } from '../services/macroRunner.service';
 import { MacroViewService } from '../services/macroView.service';
 import { getRemoteDialog } from '../electronDialog';
@@ -140,6 +141,7 @@ function genId(): string {
         <select class="mobax-text" [(ngModel)]="draft.profileId">
           <option [ngValue]="null">전역 (모든 세션)</option>
           <option *ngFor="let p of profiles" [ngValue]="p.id">{{ p.name }}</option>
+          <option *ngFor="let k of quickScopes" [ngValue]="k">{{ quickLabel(k) }} (빠른연결)</option>
         </select>
       </div>
       <div class="mobax-steps-head">
@@ -533,14 +535,31 @@ export class MacrosTabComponent implements OnInit, OnDestroy {
     if (this.view.showAll) {
       return this.macros;
     }
-    return macrosForProfile(this.macros, activeProfileId(this.app.activeTab));
+    return macrosForProfile(this.macros, activeScopeKey(this.app.activeTab));
   }
 
   scopeBadge(m: Macro): string {
     if (!m.profileId) {
       return '전역';
     }
+    if (isQuickScope(m.profileId)) {
+      return quickScopeLabel(m.profileId);
+    }
     return this.profileNames.get(m.profileId) ?? '(삭제된 프로필)';
+  }
+
+  // Editor dropdown: quick-connect device scopes — the focused quick-connect session (if any),
+  // the draft's current scope (so it never vanishes from the select mid-edit), and every quick
+  // key already used by an existing macro.
+  get quickScopes(): string[] {
+    return quickScopeChoices(
+      [activeScopeKey(this.app.activeTab), this.draft?.profileId ?? null],
+      this.macros,
+    );
+  }
+
+  quickLabel(key: string): string {
+    return quickScopeLabel(key);
   }
 
   private reload(): void {
@@ -566,7 +585,7 @@ export class MacrosTabComponent implements OnInit, OnDestroy {
       id: genId(),
       name: '새 매크로',
       steps: [],
-      profileId: activeProfileId(this.app.activeTab),
+      profileId: activeScopeKey(this.app.activeTab),
     };
     this.mode = 'edit';
   }

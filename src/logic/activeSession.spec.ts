@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   focusedLeaf,
-  activeProfileId,
+  activeScopeKey,
   isSSHLeaf,
   resolveSSHBinding,
   sidebarTabContext,
@@ -26,22 +26,38 @@ describe('focusedLeaf', () => {
   });
 });
 
-describe('activeProfileId', () => {
-  it('reads profile.id from the focused leaf', () => {
+describe('activeScopeKey', () => {
+  it('returns profile.id from the focused leaf (saved profile — old activeProfileId behavior)', () => {
     const leaf = { profile: { id: 'web' }, session: { open: true } };
-    expect(activeProfileId(leaf)).toBe('web');
+    expect(activeScopeKey(leaf)).toBe('web');
   });
 
   it('unwraps a split tab first', () => {
     const leaf = { profile: { id: 'db' } };
-    expect(activeProfileId({ getFocusedTab: () => leaf })).toBe('db');
+    expect(activeScopeKey({ getFocusedTab: () => leaf })).toBe('db');
   });
 
-  it('returns null when there is no profile id (local tab) or no leaf', () => {
-    expect(activeProfileId({ session: { open: true } })).toBeNull();
-    expect(activeProfileId({ profile: {} })).toBeNull();
-    expect(activeProfileId(null)).toBeNull();
-    expect(activeProfileId({ getFocusedTab: () => null })).toBeNull();
+  it('prefers profile.id over profile.name when both exist', () => {
+    const leaf = { profile: { id: 'web', name: 'ignored' } };
+    expect(activeScopeKey(leaf)).toBe('web');
+  });
+
+  it('falls back to quick:<name> for a quick-connect leaf (no profile.id)', () => {
+    const leaf = { profile: { name: 'bom-bd03.kt.com' } };
+    expect(activeScopeKey(leaf)).toBe('quick:bom-bd03.kt.com');
+  });
+
+  it('trims the name and treats blank names as global', () => {
+    expect(activeScopeKey({ profile: { name: '  dev-a  ' } })).toBe('quick:dev-a');
+    expect(activeScopeKey({ profile: { name: '   ' } })).toBeNull();
+    expect(activeScopeKey({ profile: { name: '' } })).toBeNull();
+  });
+
+  it('returns null when there is no profile or no leaf', () => {
+    expect(activeScopeKey({ session: { open: true } })).toBeNull();
+    expect(activeScopeKey({ profile: {} })).toBeNull();
+    expect(activeScopeKey(null)).toBeNull();
+    expect(activeScopeKey({ getFocusedTab: () => null })).toBeNull();
   });
 });
 

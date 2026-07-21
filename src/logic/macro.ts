@@ -86,10 +86,11 @@ export function filterMacros(query: string, list: Macro[]): Macro[] {
   return list.filter((m) => m.name.toLowerCase().includes(q));
 }
 
-// Macros visible/runnable for the active session: globals (no profileId) always, profile-scoped
-// only when activeProfileId matches. Order preserved so reordering in the tab is respected.
-export function macrosForProfile(list: Macro[], activeProfileId: string | null): Macro[] {
-  return list.filter((m) => !m.profileId || m.profileId === activeProfileId);
+// Macros visible/runnable for the active session: globals (no profileId) always, scoped ones
+// only when the active scope key (saved-profile id or quick:<device> — see activeScopeKey)
+// matches. Order preserved so reordering in the tab is respected.
+export function macrosForProfile(list: Macro[], activeScopeKey: string | null): Macro[] {
+  return list.filter((m) => !m.profileId || m.profileId === activeScopeKey);
 }
 
 // The macros tab renders a filtered subset (view) of the full list. CDK drop gives indices within

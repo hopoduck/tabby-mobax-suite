@@ -106,6 +106,10 @@ describe('resolveProfileScopes', () => {
     const out = resolveProfileScopes([macro('a', { profileId: null })], ['p1']);
     expect(out[0].profileId).toBeNull();
   });
+  it('keeps a quick-connect scope key verbatim (machine-independent)', () => {
+    const out = resolveProfileScopes([macro('a', { profileId: 'quick:bom-bd03.kt.com' })], ['p1']);
+    expect(out[0].profileId).toBe('quick:bom-bd03.kt.com');
+  });
 });
 
 describe('countConflicts', () => {

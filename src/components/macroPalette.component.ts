@@ -2,7 +2,7 @@ import { Component, ElementRef } from '@angular/core';
 import { COMPOSITION_BUFFER_MODE } from '@angular/forms';
 import { AppService, ConfigService } from 'tabby-core';
 import { Macro, filterMacros, macrosForProfile } from '../logic/macro';
-import { activeProfileId, focusedLeaf } from '../logic/activeSession';
+import { activeScopeKey, focusedLeaf } from '../logic/activeSession';
 import { MacroRunnerService } from '../services/macroRunner.service';
 import { MacroViewService } from '../services/macroView.service';
 
@@ -201,7 +201,7 @@ export class MacroPaletteComponent {
 
   open(): void {
     this.allMacros = [...(this.config.store.mobaxMacros?.list ?? [])];
-    this.pid = activeProfileId(this.app.activeTab);
+    this.pid = activeScopeKey(this.app.activeTab);
     const leaf = focusedLeaf(this.app.activeTab) as { profile?: { name?: string } } | null;
     this.scopeLabel = leaf?.profile?.name ? `${leaf.profile.name} 세션` : '전역';
     this.query = '';

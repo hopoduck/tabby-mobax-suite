@@ -1,3 +1,5 @@
+import { QUICK_SCOPE_PREFIX } from './scopeKey';
+
 export interface ShellSessionLike {
   open?: boolean;
 }
@@ -53,12 +55,21 @@ export function focusedLeaf(activeTab: unknown): unknown {
 }
 
 /**
- * The saved-profile id of the focused leaf (the same leaf MacroRunnerService sends to), or null
- * for a local/non-profile tab or an unresolved leaf. Used to scope macros to the active session.
+ * The macro scope key of the focused leaf (the same leaf MacroRunnerService sends to):
+ *   - a saved-profile tab → its profile id (exactly the old activeProfileId behavior)
+ *   - a quick-connect tab (profile has no id — e.g. tacs) → 'quick:' + profile.name; the
+ *     tabby-quickconnect-tacs plugin writes the trailing #title (device name) into profile.name,
+ *     and OSC dynamic titles only touch the tab title, never profile.name, so the key is stable
+ *     for the tab's lifetime.
+ *   - no profile at all → null (global macros only).
  */
-export function activeProfileId(activeTab: unknown): string | null {
-  const leaf = focusedLeaf(activeTab) as { profile?: { id?: string } } | null;
-  return leaf?.profile?.id ?? null;
+export function activeScopeKey(activeTab: unknown): string | null {
+  const leaf = focusedLeaf(activeTab) as { profile?: { id?: string; name?: string } } | null;
+  if (leaf?.profile?.id) {
+    return leaf.profile.id;
+  }
+  const name = leaf?.profile?.name?.trim();
+  return name ? QUICK_SCOPE_PREFIX + name : null;
 }
 
 /**

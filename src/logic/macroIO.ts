@@ -1,6 +1,7 @@
 // Pure, dependency-free import/export logic for macros + variables (no Angular/Tabby imports)
 // so it is unit-testable without Electron. Mirrors the test policy in CLAUDE.md.
 import { Macro } from './macro';
+import { isQuickScope } from './scopeKey';
 import { Variable } from './variables';
 
 export interface ExportFile {
@@ -55,12 +56,15 @@ export function buildExport(macros: Macro[], variables: Variable[]): ExportFile 
 }
 
 // Remap imported macros' profileId against the profile ids that actually exist locally: keep a
-// binding whose id is present, otherwise fall back to global (null). Pure so it stays unit-testable.
+// binding whose id is present, otherwise fall back to global (null). quick:* device keys are
+// machine-independent (not tied to any saved profile), so they always pass through verbatim.
+// Pure so it stays unit-testable.
 export function resolveProfileScopes(macros: Macro[], validProfileIds: Iterable<string>): Macro[] {
   const valid = new Set(validProfileIds);
   return macros.map((m) => ({
     ...m,
-    profileId: m.profileId && valid.has(m.profileId) ? m.profileId : null,
+    profileId:
+      m.profileId && (isQuickScope(m.profileId) || valid.has(m.profileId)) ? m.profileId : null,
   }));
 }
 
